@@ -50,7 +50,13 @@ func CreateConsumer(entry config.RabbitEntry, rabbitConnector connector.RabbitCo
 	if entry.RoutingKey != "" {
 		entry.RoutingKeys = append(entry.RoutingKeys, entry.RoutingKey)
 	}
-	return Consumer{entry.Name, entry.ConnectionURL, entry.ExchangeName, entry.ExchangeType, entry.QueueName, entry.RoutingKeys, rabbitConnector}
+	var exchangeType string
+	if entry.ExchangeType != "" {
+		exchangeType = entry.ExchangeType
+	} else {
+		exchangeType = "topic"
+	}
+	return Consumer{entry.Name, entry.ConnectionURL, entry.ExchangeName, exchangeType, entry.QueueName, entry.RoutingKeys, rabbitConnector}
 }
 
 // Name consumer name
