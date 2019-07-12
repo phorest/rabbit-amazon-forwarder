@@ -2,6 +2,7 @@ package mapping
 
 import (
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"os"
 
@@ -56,7 +57,7 @@ func New(helpers ...Helper) Client {
 // Load loads mappings
 func (c Client) Load() ([]ConsumerForwarderMapping, error) {
 	var consumerForwarderMapping []ConsumerForwarderMapping
-	data, err := c.loadFile()
+	data, err := c.loadMappings()
 	if err != nil {
 		return consumerForwarderMapping, err
 	}
@@ -73,10 +74,19 @@ func (c Client) Load() ([]ConsumerForwarderMapping, error) {
 	return consumerForwarderMapping, nil
 }
 
-func (c Client) loadFile() ([]byte, error) {
+func (c Client) loadMappings() ([]byte, error) {
 	filePath := os.Getenv(config.MappingFile)
-	log.WithField("mappingFile", filePath).Info("Loading mapping file")
-	return ioutil.ReadFile(filePath)
+	if filePath != "" {
+		log.WithField("mappingFile", filePath).Info("Loading mapping file")
+		return ioutil.ReadFile(filePath)
+	} else {
+		jsonConfig := os.Getenv(config.MappingJson)
+		if jsonConfig == "" {
+			return nil, errors.New("must provide either a mapping file or mapping json")
+		}
+
+		return []byte(jsonConfig), nil
+	}
 }
 
 func (h helperImpl) createConsumer(entry config.RabbitEntry) consumer.Client {

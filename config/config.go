@@ -3,6 +3,7 @@ package config
 const (
 	// MappingFile mapping file environment variable
 	MappingFile = "MAPPING_FILE"
+	MappingJson = "MAPPING_JSON"
 	CaCertFile  = "CA_CERT_FILE"
 	CertFile    = "CERT_FILE"
 	KeyFile     = "KEY_FILE"
