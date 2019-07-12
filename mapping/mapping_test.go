@@ -19,8 +19,21 @@ const (
 	snsType    = "sns"
 )
 
-func TestLoad(t *testing.T) {
+func TestLoadMappingFromFile(t *testing.T) {
 	os.Setenv(config.MappingFile, "../tests/rabbit_to_sns.json")
+	client := New(MockMappingHelper{})
+	var consumerForwarderMapping []ConsumerForwarderMapping
+	var err error
+	if consumerForwarderMapping, err = client.Load(); err != nil {
+		t.Errorf("could not load mapping and start mocked rabbit->sns pair: %s", err.Error())
+	}
+	if len(consumerForwarderMapping) != 1 {
+		t.Errorf("wrong consumerForwarderMapping size, expected 1, got %d", len(consumerForwarderMapping))
+	}
+}
+
+func TestLoadMappingFromJson(t *testing.T) {
+	os.Setenv(config.MappingJson, "[{\"source\":{\"type\":\"RabbitMQ\",\"name\":\"test-rabbit\",\"connection\":\"amqp://guest:guest@localhost:5672/\",\"topic\":\"amq.topic\",\"queue\":\"test-queue\",\"routing\":\"#\"},\"destination\":{\"type\":\"SNS\",\"name\":\"test-sns\",\"target\":\"arn:aws:sns:eu-west-1:XXXXXXXX:test-forwarder\"}}]")
 	client := New(MockMappingHelper{})
 	var consumerForwarderMapping []ConsumerForwarderMapping
 	var err error
@@ -35,7 +48,19 @@ func TestLoad(t *testing.T) {
 func TestLoadFile(t *testing.T) {
 	os.Setenv(config.MappingFile, "../tests/rabbit_to_sns.json")
 	client := New()
-	data, err := client.loadFile()
+	data, err := client.loadMappings()
+	if err != nil {
+		t.Errorf("could not load file: %s", err.Error())
+	}
+	if len(data) < 1 {
+		t.Errorf("could not load file: empty steam found")
+	}
+}
+
+func TestLoadJson(t *testing.T) {
+	os.Setenv(config.MappingJson, "[{\"source\":{\"type\":\"itMQ\",\"name\":\"test-rabbit\",\"connection\":\"amqp://guest:guest@localhost:5672/\",\"topic\":\"amq.topic\",\"queue\":\"test-queue\",\"routing\":\"#\"},\"destination\":{\"type\":\"SNS\",\"name\":\"test-sns\",\"target\":\"arn:aws:sns:eu-west-1:XXXXXXXX:test-forwarder\"}}]")
+	client := New()
+	data, err := client.loadMappings()
 	if err != nil {
 		t.Errorf("could not load file: %s", err.Error())
 	}

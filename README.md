@@ -50,6 +50,7 @@ Sample of RabbitMQ -> SNS mapping file. All fields are required. Samples are loc
 Forwarder uses the following environment variables:
 ```bash
 export MAPPING_FILE=/config/mapping.json
+export MAPPING_JSON='[{"source":{"type":"RabbitMQ","name":"test-rabbit","connection":"amqp:\/\/guest:guest@localhost:5672\/","topic":"amq.topic","queue":"test-queue","routing":"#"},"destination":{"type":"SNS","name":"test-sns","target":"arn:aws:sns:eu-west-1:XXXXXXXX:test-forwarder"}}]'
 export AWS_REGION=region
 export AWS_ACCESS_KEY_ID=access_key
 export AWS_SECRET_ACCESS_KEY=secret_key
