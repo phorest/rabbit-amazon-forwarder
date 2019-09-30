@@ -1,5 +1,9 @@
 package forwarder
 
+import (
+	"github.com/streadway/amqp"
+)
+
 const (
 	// EmptyMessageError empty error message
 	EmptyMessageError = "message is empty"
@@ -8,5 +12,5 @@ const (
 // Client interface to forwarding messages
 type Client interface {
 	Name() string
-	Push(message string) error
+	Push(message amqp.Delivery) error
 }

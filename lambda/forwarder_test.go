@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/aws/aws-sdk-go/service/lambda/lambdaiface"
+	"github.com/streadway/amqp"
 )
 
 const (
@@ -37,42 +38,42 @@ func TestPush(t *testing.T) {
 	scenarios := []struct {
 		name     string
 		mock     lambdaiface.LambdaAPI
-		message  string
+		delivery amqp.Delivery
 		function string
 		err      error
 	}{
 		{
 			name:     "empty message",
 			mock:     mockAmazonLambda{resp: lambda.InvokeOutput{StatusCode: aws.Int64(202)}, function: functionName, message: ""},
-			message:  "",
+			delivery: amqp.Delivery{Body: []byte("")},
 			function: functionName,
 			err:      errors.New(forwarder.EmptyMessageError),
 		},
 		{
 			name:     "bad request",
 			mock:     mockAmazonLambda{resp: lambda.InvokeOutput{StatusCode: aws.Int64(202)}, function: functionName, message: badRequest},
-			message:  badRequest,
+			delivery: amqp.Delivery{Body: []byte(badRequest)},
 			function: functionName,
 			err:      errors.New(badRequest),
 		},
 		{
 			name:     "handled error",
 			mock:     mockAmazonLambda{resp: lambda.InvokeOutput{StatusCode: aws.Int64(202), FunctionError: aws.String(handlerError)}, function: functionName, message: handlerError},
-			message:  handlerError,
+			delivery: amqp.Delivery{Body: []byte(handlerError)},
 			function: functionName,
 			err:      errors.New(handlerError),
 		},
 		{
 			name:     "unhandled error",
 			mock:     mockAmazonLambda{resp: lambda.InvokeOutput{StatusCode: aws.Int64(202), FunctionError: aws.String(unhandledError)}, function: functionName, message: unhandledError},
-			message:  unhandledError,
+			delivery: amqp.Delivery{Body: []byte(unhandledError)},
 			function: functionName,
 			err:      errors.New(unhandledError),
 		},
 		{
 			name:     "success",
 			mock:     mockAmazonLambda{resp: lambda.InvokeOutput{StatusCode: aws.Int64(202)}, function: functionName, message: "abc"},
-			message:  "abc",
+			delivery: amqp.Delivery{Body: []byte("abc")},
 			function: functionName,
 			err:      nil,
 		},
@@ -80,7 +81,7 @@ func TestPush(t *testing.T) {
 	for _, scenario := range scenarios {
 		t.Log("Scenario name: ", scenario.name)
 		forwarder := CreateForwarder(entry, scenario.mock)
-		err := forwarder.Push(scenario.message)
+		err := forwarder.Push(scenario.delivery)
 		if scenario.err == nil && err != nil {
 			t.Errorf("Error should not occur. Error: %s", err.Error())
 			return

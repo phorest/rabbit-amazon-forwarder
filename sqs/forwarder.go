@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
+	"github.com/streadway/amqp"
 )
 
 const (
@@ -43,7 +44,8 @@ func (f Forwarder) Name() string {
 }
 
 // Push pushes message to forwarding infrastructure
-func (f Forwarder) Push(message string) error {
+func (f Forwarder) Push(delivery amqp.Delivery) error {
+	message := string(delivery.Body)
 	if message == "" {
 		return errors.New(forwarder.EmptyMessageError)
 	}

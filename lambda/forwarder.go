@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/aws/aws-sdk-go/service/lambda/lambdaiface"
 	log "github.com/sirupsen/logrus"
+	"github.com/streadway/amqp"
 )
 
 const (
@@ -42,7 +43,8 @@ func (f Forwarder) Name() string {
 }
 
 // Push pushes message to forwarding infrastructure
-func (f Forwarder) Push(message string) error {
+func (f Forwarder) Push(delivery amqp.Delivery) error {
+	message := string(delivery.Body)
 	if message == "" {
 		return errors.New(forwarder.EmptyMessageError)
 	}

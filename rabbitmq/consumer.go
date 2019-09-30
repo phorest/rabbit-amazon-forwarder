@@ -175,7 +175,7 @@ func (c Consumer) startForwarding(params *workerParams) error {
 			log.WithFields(log.Fields{
 				"consumerName": c.Name(),
 				"messageID":    d.MessageId}).Info("Message to forward")
-			err := params.forwarder.Push(string(d.Body))
+			err := params.forwarder.Push(d)
 			if err != nil {
 				log.WithFields(log.Fields{
 					"forwarderName": forwarderName,
