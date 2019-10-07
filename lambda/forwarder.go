@@ -1,7 +1,6 @@
 package lambda
 
 import (
-	"fmt"
 	"errors"
 	"encoding/json"
 
