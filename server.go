@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/AirHelp/rabbit-amazon-forwarder/mapping"
-	"github.com/AirHelp/rabbit-amazon-forwarder/supervisor"
+	"github.com/phorest/rabbit-amazon-forwarder/mapping"
+	"github.com/phorest/rabbit-amazon-forwarder/supervisor"
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"os"

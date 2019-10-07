@@ -1,9 +1,12 @@
 package lambda
 
 import (
+	"fmt"
 	"errors"
-	"github.com/AirHelp/rabbit-amazon-forwarder/config"
-	"github.com/AirHelp/rabbit-amazon-forwarder/forwarder"
+	"encoding/json"
+
+	"github.com/phorest/rabbit-amazon-forwarder/config"
+	"github.com/phorest/rabbit-amazon-forwarder/forwarder"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/lambda"
@@ -21,17 +24,24 @@ type Forwarder struct {
 	name         string
 	lambdaClient lambdaiface.LambdaAPI
 	function     string
+	forwardHeaders bool
+}
+
+type Payload struct {
+	Body string `json:"body"`
+	Headers map[string] interface{} `json:"headers"`
 }
 
 // CreateForwarder creates instance of forwarder
-func CreateForwarder(entry config.AmazonEntry, lambdaClient ...lambdaiface.LambdaAPI) forwarder.Client {
+func CreateForwarder(entry config.AmazonEntry, options config.Options, lambdaClient ...lambdaiface.LambdaAPI) forwarder.Client {
 	var client lambdaiface.LambdaAPI
 	if len(lambdaClient) > 0 {
 		client = lambdaClient[0]
 	} else {
 		client = lambda.New(session.Must(session.NewSession()))
 	}
-	forwarder := Forwarder{entry.Name, client, entry.Target}
+
+	forwarder := Forwarder{entry.Name, client, entry.Target, options.ForwardHeaders}
 	log.WithField("forwarderName", forwarder.Name()).Info("Created forwarder")
 	return forwarder
 }
@@ -42,14 +52,24 @@ func (f Forwarder) Name() string {
 }
 
 // Push pushes message to forwarding infrastructure
-func (f Forwarder) Push(message string) error {
-	if message == "" {
+func (f Forwarder) Push(messageBody string, headers map[string]interface{}) error {
+	if messageBody == "" {
 		return errors.New(forwarder.EmptyMessageError)
 	}
+
+	messagePayload, err := f.buildPayload(messageBody, headers)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"forwarderName": f.Name(),
+			"error":         err.Error()}).Error("Could not build message payload to push")
+		return err
+	}
+
 	params := &lambda.InvokeInput{
 		FunctionName: aws.String(f.function),
-		Payload:      []byte(message),
+		Payload:      messagePayload,
 	}
+
 	resp, err := f.lambdaClient.Invoke(params)
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -67,4 +87,18 @@ func (f Forwarder) Push(message string) error {
 		"forwarderName": f.Name(),
 		"statusCode":    resp.StatusCode}).Info("Forward succeeded")
 	return nil
+}
+
+func (f Forwarder) buildPayload(messageBody string, headers map[string]interface{}) ([]byte, error) {
+	if f.forwardHeaders {
+		payload := Payload {
+			Body: messageBody,
+			Headers: headers,
+		}
+		messagePayload, err := json.Marshal(payload)
+		if (err != nil) { return nil, err }
+		return messagePayload, nil
+	} else {
+		return []byte(messageBody), nil
+	}
 }

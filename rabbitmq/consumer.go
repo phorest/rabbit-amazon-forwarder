@@ -7,10 +7,10 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/AirHelp/rabbit-amazon-forwarder/config"
-	"github.com/AirHelp/rabbit-amazon-forwarder/connector"
-	"github.com/AirHelp/rabbit-amazon-forwarder/consumer"
-	"github.com/AirHelp/rabbit-amazon-forwarder/forwarder"
+	"github.com/phorest/rabbit-amazon-forwarder/config"
+	"github.com/phorest/rabbit-amazon-forwarder/connector"
+	"github.com/phorest/rabbit-amazon-forwarder/consumer"
+	"github.com/phorest/rabbit-amazon-forwarder/forwarder"
 	"github.com/streadway/amqp"
 )
 
@@ -175,7 +175,8 @@ func (c Consumer) startForwarding(params *workerParams) error {
 			log.WithFields(log.Fields{
 				"consumerName": c.Name(),
 				"messageID":    d.MessageId}).Info("Message to forward")
-			err := params.forwarder.Push(string(d.Body))
+
+			err := params.forwarder.Push(string(d.Body), d.Headers) 
 			if err != nil {
 				log.WithFields(log.Fields{
 					"forwarderName": forwarderName,

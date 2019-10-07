@@ -5,13 +5,13 @@ import (
 	"os"
 	"testing"
 
-	"github.com/AirHelp/rabbit-amazon-forwarder/config"
-	"github.com/AirHelp/rabbit-amazon-forwarder/consumer"
-	"github.com/AirHelp/rabbit-amazon-forwarder/forwarder"
-	"github.com/AirHelp/rabbit-amazon-forwarder/lambda"
-	"github.com/AirHelp/rabbit-amazon-forwarder/rabbitmq"
-	"github.com/AirHelp/rabbit-amazon-forwarder/sns"
-	"github.com/AirHelp/rabbit-amazon-forwarder/sqs"
+	"github.com/phorest/rabbit-amazon-forwarder/config"
+	"github.com/phorest/rabbit-amazon-forwarder/consumer"
+	"github.com/phorest/rabbit-amazon-forwarder/forwarder"
+	"github.com/phorest/rabbit-amazon-forwarder/lambda"
+	"github.com/phorest/rabbit-amazon-forwarder/rabbitmq"
+	"github.com/phorest/rabbit-amazon-forwarder/sns"
+	"github.com/phorest/rabbit-amazon-forwarder/sqs"
 )
 
 const (
@@ -95,7 +95,9 @@ func TestCreateForwarderSNS(t *testing.T) {
 		Name:   forwarderName,
 		Target: "arn",
 	}
-	forwarder := client.helper.createForwarder(entry)
+	options := config.Options{}
+
+	forwarder := client.helper.createForwarder(entry, options)
 	if forwarder.Name() != forwarderName {
 		t.Errorf("wrong forwarder name, expected %s, found %s", forwarderName, forwarder.Name())
 	}
@@ -108,7 +110,9 @@ func TestCreateForwarderSQS(t *testing.T) {
 		Name:   forwarderName,
 		Target: "arn",
 	}
-	forwarder := client.helper.createForwarder(entry)
+	options := config.Options{}
+
+	forwarder := client.helper.createForwarder(entry, options)
 	if forwarder.Name() != forwarderName {
 		t.Errorf("wrong forwarder name, expected %s, found %s", forwarderName, forwarder.Name())
 	}
@@ -121,7 +125,8 @@ func TestCreateForwarderLambda(t *testing.T) {
 		Name:   forwarderName,
 		Target: "function-name",
 	}
-	forwarder := client.helper.createForwarder(entry)
+	options := config.Options{} 
+	forwarder := client.helper.createForwarder(entry, options)
 	if forwarder.Name() != forwarderName {
 		t.Errorf("wrong forwarder name, expected %s, found %s", forwarderName, forwarder.Name())
 	}
@@ -142,6 +147,7 @@ type MockSQSForwarder struct {
 
 type MockLambdaForwarder struct {
 	name string
+	options config.Options
 }
 
 type ErrorForwarder struct{}
@@ -152,14 +158,14 @@ func (h MockMappingHelper) createConsumer(entry config.RabbitEntry) consumer.Cli
 	}
 	return MockRabbitConsumer{}
 }
-func (h MockMappingHelper) createForwarder(entry config.AmazonEntry) forwarder.Client {
+func (h MockMappingHelper) createForwarder(entry config.AmazonEntry, options config.Options) forwarder.Client {
 	switch entry.Type {
 	case sns.Type:
 		return MockSNSForwarder{entry.Name}
 	case sqs.Type:
 		return MockSQSForwarder{entry.Name}
 	case lambda.Type:
-		return MockLambdaForwarder{entry.Name}
+		return MockLambdaForwarder{entry.Name, options}
 	}
 	return ErrorForwarder{}
 }
@@ -176,7 +182,7 @@ func (f MockSNSForwarder) Name() string {
 	return f.name
 }
 
-func (f MockSNSForwarder) Push(message string) error {
+func (f MockSNSForwarder) Push(message string, headers map[string]interface{}) error {
 	return nil
 }
 
@@ -184,7 +190,7 @@ func (f MockSQSForwarder) Name() string {
 	return f.name
 }
 
-func (f MockLambdaForwarder) Push(message string) error {
+func (f MockLambdaForwarder) Push(message string, headers map[string]interface{}) error {
 	return nil
 }
 
@@ -192,7 +198,7 @@ func (f MockLambdaForwarder) Name() string {
 	return f.name
 }
 
-func (f MockSQSForwarder) Push(message string) error {
+func (f MockSQSForwarder) Push(message string, headers map[string]interface{}) error {
 	return nil
 }
 
@@ -200,6 +206,6 @@ func (f ErrorForwarder) Name() string {
 	return "error-forwarder"
 }
 
-func (f ErrorForwarder) Push(message string) error {
+func (f ErrorForwarder) Push(message string, headers map[string]interface{}) error {
 	return errors.New("Wrong forwader created")
 }

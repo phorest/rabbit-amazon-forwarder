@@ -6,23 +6,24 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/AirHelp/rabbit-amazon-forwarder/connector"
+	"github.com/phorest/rabbit-amazon-forwarder/connector"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/AirHelp/rabbit-amazon-forwarder/config"
-	"github.com/AirHelp/rabbit-amazon-forwarder/consumer"
-	"github.com/AirHelp/rabbit-amazon-forwarder/forwarder"
-	"github.com/AirHelp/rabbit-amazon-forwarder/lambda"
-	"github.com/AirHelp/rabbit-amazon-forwarder/rabbitmq"
-	"github.com/AirHelp/rabbit-amazon-forwarder/sns"
-	"github.com/AirHelp/rabbit-amazon-forwarder/sqs"
+	"github.com/phorest/rabbit-amazon-forwarder/config"
+	"github.com/phorest/rabbit-amazon-forwarder/consumer"
+	"github.com/phorest/rabbit-amazon-forwarder/forwarder"
+	"github.com/phorest/rabbit-amazon-forwarder/lambda"
+	"github.com/phorest/rabbit-amazon-forwarder/rabbitmq"
+	"github.com/phorest/rabbit-amazon-forwarder/sns"
+	"github.com/phorest/rabbit-amazon-forwarder/sqs"
 )
 
-type pairs []pair
+type rules []ForwardingRule
 
-type pair struct {
+type ForwardingRule struct { 
 	Source      config.RabbitEntry `json:"source"`
 	Destination config.AmazonEntry `json:"destination"`
+	Options 	config.Options `json:"options"`
 }
 
 // Client mapping client
@@ -33,7 +34,7 @@ type Client struct {
 // Helper interface for creating consumers and forwaders
 type Helper interface {
 	createConsumer(entry config.RabbitEntry) consumer.Client
-	createForwarder(entry config.AmazonEntry) forwarder.Client
+	createForwarder(entry config.AmazonEntry, options config.Options) forwarder.Client
 }
 
 // ConsumerForwarderMapping mapping for consumers and forwarders
@@ -61,14 +62,14 @@ func (c Client) Load() ([]ConsumerForwarderMapping, error) {
 	if err != nil {
 		return consumerForwarderMapping, err
 	}
-	var pairsList pairs
-	if err = json.Unmarshal(data, &pairsList); err != nil {
+	var rulesList rules
+	if err = json.Unmarshal(data, &rulesList); err != nil {
 		return consumerForwarderMapping, err
 	}
 	log.Info("Loading consumer - forwarder pairs")
-	for _, pair := range pairsList {
-		consumer := c.helper.createConsumer(pair.Source)
-		forwarder := c.helper.createForwarder(pair.Destination)
+	for _, rule := range rulesList {
+		consumer := c.helper.createConsumer(rule.Source)
+		forwarder := c.helper.createForwarder(rule.Destination, rule.Options)
 		consumerForwarderMapping = append(consumerForwarderMapping, ConsumerForwarderMapping{consumer, forwarder})
 	}
 	return consumerForwarderMapping, nil
@@ -101,7 +102,7 @@ func (h helperImpl) createConsumer(entry config.RabbitEntry) consumer.Client {
 	return nil
 }
 
-func (h helperImpl) createForwarder(entry config.AmazonEntry) forwarder.Client {
+func (h helperImpl) createForwarder(entry config.AmazonEntry, options config.Options) forwarder.Client {
 	log.WithFields(log.Fields{
 		"forwarderType": entry.Type,
 		"forwarderName": entry.Name}).Info("Creating forwarder")
@@ -111,7 +112,7 @@ func (h helperImpl) createForwarder(entry config.AmazonEntry) forwarder.Client {
 	case sqs.Type:
 		return sqs.CreateForwarder(entry)
 	case lambda.Type:
-		return lambda.CreateForwarder(entry)
+		return lambda.CreateForwarder(entry, options)
 	}
 	return nil
 }

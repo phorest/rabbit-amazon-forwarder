@@ -4,8 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/AirHelp/rabbit-amazon-forwarder/config"
-	"github.com/AirHelp/rabbit-amazon-forwarder/forwarder"
+	"github.com/phorest/rabbit-amazon-forwarder/config"
+	"github.com/phorest/rabbit-amazon-forwarder/forwarder"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
@@ -34,6 +34,7 @@ func TestPush(t *testing.T) {
 		name    string
 		mock    snsiface.SNSAPI
 		message string
+		headers	map[string]interface{}
 		topic   string
 		err     error
 	}{
@@ -41,6 +42,7 @@ func TestPush(t *testing.T) {
 			name:    "empty message",
 			mock:    mockAmazonSNS{resp: sns.PublishOutput{MessageId: aws.String("messageId")}, topic: topicName, message: ""},
 			message: "",
+			headers:  nil,
 			topic:   topicName,
 			err:     errors.New(forwarder.EmptyMessageError),
 		},
@@ -48,6 +50,7 @@ func TestPush(t *testing.T) {
 			name:    "bad request",
 			mock:    mockAmazonSNS{resp: sns.PublishOutput{MessageId: aws.String("messageId")}, topic: topicName, message: badRequest},
 			message: badRequest,
+			headers:  nil,
 			topic:   topicName,
 			err:     errors.New(badRequest),
 		},
@@ -55,6 +58,7 @@ func TestPush(t *testing.T) {
 			name:    "success",
 			mock:    mockAmazonSNS{resp: sns.PublishOutput{MessageId: aws.String("messageId")}, topic: topicName, message: "abc"},
 			message: "abc",
+			headers:  nil,
 			topic:   topicName,
 			err:     nil,
 		},
@@ -62,7 +66,7 @@ func TestPush(t *testing.T) {
 	for _, scenario := range scenarios {
 		t.Log("Scenario name: ", scenario.name)
 		forwarder := CreateForwarder(entry, scenario.mock)
-		err := forwarder.Push(scenario.message)
+		err := forwarder.Push(scenario.message, scenario.headers)
 		if scenario.err == nil && err != nil {
 			t.Errorf("Error should not occur")
 			return

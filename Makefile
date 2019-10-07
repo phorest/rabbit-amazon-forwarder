@@ -1,8 +1,8 @@
 build:
-	docker build -t airhelp/rabbit-amazon-forwarder -f Dockerfile .
+	docker build -t phorest/rabbit-amazon-forwarder -f Dockerfile .
 
 push: test build
-	docker push airhelp/rabbit-amazon-forwarder
+	docker push phorest/rabbit-amazon-forwarder
 
 test:
 	docker-compose run --rm tests

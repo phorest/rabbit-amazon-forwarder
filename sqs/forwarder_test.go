@@ -4,8 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/AirHelp/rabbit-amazon-forwarder/config"
-	"github.com/AirHelp/rabbit-amazon-forwarder/forwarder"
+	"github.com/phorest/rabbit-amazon-forwarder/config"
+	"github.com/phorest/rabbit-amazon-forwarder/forwarder"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
@@ -34,6 +34,7 @@ func TestPush(t *testing.T) {
 		name    string
 		mock    sqsiface.SQSAPI
 		message string
+		headers	map[string]interface{}
 		queue   string
 		err     error
 	}{
@@ -41,6 +42,7 @@ func TestPush(t *testing.T) {
 			name:    "empty message",
 			mock:    mockAmazonSQS{resp: sqs.SendMessageOutput{MessageId: aws.String("messageId")}, queue: queueName, message: ""},
 			message: "",
+			headers: nil,
 			queue:   queueName,
 			err:     errors.New(forwarder.EmptyMessageError),
 		},
@@ -48,6 +50,7 @@ func TestPush(t *testing.T) {
 			name:    "bad request",
 			mock:    mockAmazonSQS{resp: sqs.SendMessageOutput{MessageId: aws.String("messageId")}, queue: queueName, message: badRequest},
 			message: badRequest,
+			headers: nil,
 			queue:   queueName,
 			err:     errors.New(badRequest),
 		},
@@ -55,6 +58,7 @@ func TestPush(t *testing.T) {
 			name:    "success",
 			mock:    mockAmazonSQS{resp: sqs.SendMessageOutput{MessageId: aws.String("messageId")}, queue: queueName, message: "abc"},
 			message: "abc",
+			headers: nil,
 			queue:   queueName,
 			err:     nil,
 		},
@@ -62,7 +66,7 @@ func TestPush(t *testing.T) {
 	for _, scenario := range scenarios {
 		t.Log("Scenario name: ", scenario.name)
 		forwarder := CreateForwarder(entry, scenario.mock)
-		err := forwarder.Push(scenario.message)
+		err := forwarder.Push(scenario.message, scenario.headers)
 		if scenario.err == nil && err != nil {
 			t.Errorf("Error should not occur")
 			return

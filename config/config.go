@@ -27,3 +27,7 @@ type AmazonEntry struct {
 	Name   string `json:"name"`
 	Target string `json:"target"`
 }
+
+type Options struct {
+	ForwardHeaders bool `json:"forwardHeaders"`
+}

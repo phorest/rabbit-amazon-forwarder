@@ -8,5 +8,5 @@ const (
 // Client interface to forwarding messages
 type Client interface {
 	Name() string
-	Push(message string) error
+	Push(messageBody string, headers map[string]interface{}) error
 }

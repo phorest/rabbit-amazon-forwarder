@@ -9,7 +9,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/AirHelp/rabbit-amazon-forwarder/mapping"
+	"github.com/phorest/rabbit-amazon-forwarder/mapping"
 )
 
 const (
